@@ -1,0 +1,2247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Fire Tournament Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .tournament-card {
+            background: linear-gradient(145deg, #1e3a8a, #3b82f6);
+        }
+        .admin-card {
+            background: linear-gradient(145deg, #7c2d12, #ea580c);
+        }
+        .status-live {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: none;
+        }
+        .modal-content {
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .sidebar {
+            width: 250px; /* Adjust as needed */
+            transition: transform 0.3s ease-in-out;
+        }
+        .sidebar-hidden {
+            transform: translateX(-100%);
+        }
+        .main-content-shifted {
+            margin-left: 250px; /* Should match sidebar width */
+        }
+         .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: red;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Notification System -->
+    <div id="notification" class="notification">
+        <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+            <span id="notificationText"></span>
+        </div>
+    </div>
+
+    <!-- User Sidebar -->
+    <div id="userSidebar" class="sidebar fixed top-0 left-0 h-full gradient-bg text-white p-4 z-40 sidebar-hidden shadow-lg">
+        <button id="closeSidebarBtn" class="absolute top-4 right-4 text-xl">&times;</button>
+        <h2 class="text-2xl font-bold mb-6 mt-8">Menu</h2>
+        <nav class="space-y-3">
+            <a href="#" onclick="showUserDashboardContent('overview')" class="block py-2 px-3 rounded hover:bg-white hover:text-blue-600"><i class="fas fa-tachometer-alt mr-2"></i>Dashboard</a>
+            <a href="#" onclick="showUserDashboardContent('tournaments')" class="block py-2 px-3 rounded hover:bg-white hover:text-blue-600"><i class="fas fa-trophy mr-2"></i>Tournaments</a>
+            <a href="#" onclick="showProfile()" class="block py-2 px-3 rounded hover:bg-white hover:text-blue-600"><i class="fas fa-user-edit mr-2"></i>Edit Profile</a>
+            <a href="#" onclick="showReferralInfo()" class="block py-2 px-3 rounded hover:bg-white hover:text-blue-600"><i class="fas fa-share-alt mr-2"></i>Refer & Earn</a>
+            <a href="#" onclick="showPagePlaceholder('Contact Us')" class="block py-2 px-3 rounded hover:bg-white hover:text-blue-600"><i class="fas fa-address-book mr-2"></i>Contact Us</a>
+            <a href="#" onclick="showPagePlaceholder('Privacy Policy')" class="block py-2 px-3 rounded hover:bg-white hover:text-blue-600"><i class="fas fa-shield-alt mr-2"></i>Privacy Policy</a>
+            <a href="#" onclick="showPagePlaceholder('About Us')" class="block py-2 px-3 rounded hover:bg-white hover:text-blue-600"><i class="fas fa-info-circle mr-2"></i>About Us</a>
+            <a href="#" onclick="showPagePlaceholder('Disclaimer')" class="block py-2 px-3 rounded hover:bg-white hover:text-blue-600"><i class="fas fa-exclamation-triangle mr-2"></i>Disclaimer</a>
+        </nav>
+        <div class="mt-auto pt-6">
+            <h3 class="text-lg font-semibold mb-2">Follow Us</h3>
+            <div id="socialLinksContainer" class="flex space-x-3">
+                <!-- Social links will be populated here by JS -->
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Navigation -->
+    <nav class="gradient-bg text-white shadow-lg sticky top-0 z-30">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-2">
+                    <button id="sidebarToggleBtn" class="text-white text-2xl focus:outline-none lg:hidden">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <i class="fas fa-fire text-orange-400 text-2xl"></i>
+                    <h1 class="text-xl font-bold">FF Tournament</h1>
+                </div>
+                <div id="navButtons" class="flex items-center space-x-4">
+                    <!-- Dynamic navigation buttons -->
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div id="app" class="container mx-auto px-4 py-8">
+        <!-- Login/Register Page -->
+        <div id="authPage" class="max-w-md mx-auto">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <div class="text-center mb-6">
+                    <i class="fas fa-fire text-orange-500 text-4xl mb-2"></i>
+                    <h2 class="text-2xl font-bold text-gray-800">Free Fire Tournament</h2>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="flex border rounded-lg overflow-hidden">
+                        <button id="loginTab" class="flex-1 py-2 px-4 bg-blue-500 text-white font-medium">Login</button>
+                        <button id="registerTab" class="flex-1 py-2 px-4 bg-gray-200 text-gray-700 font-medium">Register</button>
+                    </div>
+                </div>
+
+                <!-- Login Form -->
+                <form id="loginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Username/Email</label>
+                        <input type="text" id="loginUsername" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                        <input type="password" id="loginPassword" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-200">Login</button>
+                </form>
+
+                <!-- Register Form -->
+                <form id="registerForm" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Full Name</label>
+                        <input type="text" id="registerName" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Username</label>
+                        <input type="text" id="registerUsername" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+                        <input type="email" id="registerEmail" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                        <input type="password" id="registerPassword" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Free Fire ID</label>
+                        <input type="text" id="registerFFID" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                    <!-- NEW: Phone Number Field -->
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Phone Number</label>
+                        <input type="tel" id="registerPhone" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                    <!-- NEW: Referral Code Field -->
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Referral Code (Optional)</label>
+                        <input type="text" id="registerReferralCode" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    </div>
+                    <button type="submit" class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition duration-200">Register</button>
+                </form>
+
+                <div class="mt-4 text-center">
+                    <button id="adminLoginBtn" class="text-sm text-blue-500 hover:underline">Admin Login</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Dashboard -->
+        <div id="userDashboard" class="hidden">
+            <!-- NEW: User Dashboard Content Area -->
+            <div id="userDashboardOverview" class="user-dashboard-content">
+                <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-1">Welcome, <span id="userWelcomeName"></span>!</h3>
+                    <p class="text-gray-600 mb-4">Here's your Free Fire Tournament Platform overview.</p>
+                    <!-- Tournament Banner Placeholder -->
+                    <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-lg mb-6 text-center">
+                        <h2 class="text-2xl font-bold">Featured Tournament</h2>
+                        <p>Check out the latest and greatest tournaments available now!</p>
+                        <button onclick="showUserDashboardContent('tournaments')" class="mt-3 bg-yellow-400 text-black px-4 py-2 rounded-lg font-semibold hover:bg-yellow-500">View Tournaments</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- User Stats Cards -->
+                    <div class="bg-white rounded-lg shadow-lg p-6 card-hover">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-blue-100 text-blue-500">
+                                <i class="fas fa-wallet text-xl"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-gray-600 text-sm">Wallet Balance</p>
+                                <p class="text-2xl font-bold text-gray-800">₹<span id="userWalletBalance">0</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-lg p-6 card-hover">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-green-100 text-green-500">
+                                <i class="fas fa-trophy text-xl"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-gray-600 text-sm">Tournaments Won</p>
+                                <p class="text-2xl font-bold text-gray-800"><span id="userWins">0</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-lg p-6 card-hover">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-purple-100 text-purple-500">
+                                <i class="fas fa-gamepad text-xl"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-gray-600 text-sm">Tournaments Joined</p>
+                                <p class="text-2xl font-bold text-gray-800"><span id="userTournaments">0</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Quick Actions</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <button onclick="showAddMoney()" class="flex flex-col items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition duration-200 card-hover">
+                            <i class="fas fa-plus-circle text-blue-500 text-2xl mb-2"></i>
+                            <span class="text-sm font-medium text-blue-700">Add Money</span>
+                        </button>
+                        <button onclick="showWithdraw()" class="flex flex-col items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition duration-200 card-hover">
+                            <i class="fas fa-money-bill-wave text-green-500 text-2xl mb-2"></i>
+                            <span class="text-sm font-medium text-green-700">Withdraw</span>
+                        </button>
+                        <button onclick="showProfile()" class="flex flex-col items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition duration-200 card-hover">
+                            <i class="fas fa-user text-purple-500 text-2xl mb-2"></i>
+                            <span class="text-sm font-medium text-purple-700">Profile</span>
+                        </button>
+                        <button onclick="showHistory()" class="flex flex-col items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition duration-200 card-hover">
+                            <i class="fas fa-history text-orange-500 text-2xl mb-2"></i>
+                            <span class="text-sm font-medium text-orange-700">History</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Tournaments -->
+            <div id="userDashboardTournaments" class="bg-white rounded-lg shadow-lg p-6 user-dashboard-content hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-gray-800">Available Tournaments</h3>
+                    <div class="flex space-x-2">
+                        <select id="gameTypeFilter" class="px-3 py-1 border rounded-lg text-sm">
+                            <option value="">All Game Types</option>
+                            <option value="solo">Solo (1v1)</option>
+                            <option value="duo">Duo (2v2)</option>
+                            <option value="squad">Squad (4v4)</option>
+                            <option value="trio">Trio (3v3)</option>
+                            <option value="br_solo">BR Solo (50 Players)</option>
+                            <option value="br_duo">BR Duo</option>
+                            <option value="br_squad">BR Squad</option>
+                        </select>
+                        <button onclick="refreshTournaments()" class="px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600">
+                            <i class="fas fa-refresh"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="tournamentsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Tournaments will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="adminDashboard" class="hidden">
+             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <!-- Admin Stats Cards -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-500">
+                            <i class="fas fa-users text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-600 text-sm">Total Users</p>
+                            <p class="text-2xl font-bold text-gray-800"><span id="totalUsers">0</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-500">
+                            <i class="fas fa-trophy text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-600 text-sm">Active Tournaments</p>
+                            <p class="text-2xl font-bold text-gray-800"><span id="activeTournaments">0</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100 text-purple-500">
+                            <i class="fas fa-money-bill-wave text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-600 text-sm">Total Revenue</p>
+                            <p class="text-2xl font-bold text-gray-800">₹<span id="totalRevenue">0</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-red-100 text-red-500">
+                            <i class="fas fa-clock text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-600 text-sm">Pending Approvals</p>
+                            <p class="text-2xl font-bold text-gray-800"><span id="pendingApprovals">0</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Navigation Tabs -->
+            <div class="bg-white rounded-lg shadow-lg mb-8">
+                <div class="border-b border-gray-200">
+                    <nav class="flex space-x-8 px-6 overflow-x-auto">
+                        <button onclick="showAdminTab('tournaments')" class="admin-tab-btn py-4 px-1 border-b-2 border-blue-500 text-blue-600 font-medium">Tournaments</button>
+                        <button onclick="showAdminTab('users')" class="admin-tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium">Users</button>
+                        <button onclick="showAdminTab('payments')" class="admin-tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium">Payments</button>
+                        <button onclick="showAdminTab('withdrawals')" class="admin-tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium">Withdrawals</button>
+                        <!-- NEW: Settings Tab -->
+                        <button onclick="showAdminTab('settings')" class="admin-tab-btn py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium">Settings</button>
+                    </nav>
+                </div>
+                
+                <div class="p-6">
+                    <!-- Tournament Management Tab -->
+                    <div id="adminTournamentsTab" class="admin-tab-content">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-bold text-gray-800">Tournament Management</h3>
+                            <button onclick="showCreateTournamentModal(null)" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                                <i class="fas fa-plus mr-2"></i>Create Tournament
+                            </button>
+                        </div>
+                        <div id="adminTournamentsList">
+                            <!-- Tournament list will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- User Management Tab -->
+                    <div id="adminUsersTab" class="admin-tab-content hidden">
+                        <h3 class="text-lg font-bold text-gray-800 mb-6">User Management</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">FF ID</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wallet</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminUsersTable" class="bg-white divide-y divide-gray-200">
+                                    <!-- User data will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Payment Management Tab -->
+                    <div id="adminPaymentsTab" class="admin-tab-content hidden">
+                        <h3 class="text-lg font-bold text-gray-800 mb-6">Payment Verification</h3>
+                        <div id="adminPaymentsList">
+                            <!-- Payment requests will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Withdrawal Management Tab -->
+                    <div id="adminWithdrawalsTab" class="admin-tab-content hidden">
+                        <h3 class="text-lg font-bold text-gray-800 mb-6">Withdrawal Requests</h3>
+                        <div id="adminWithdrawalsList">
+                            <!-- Withdrawal requests will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- NEW: Admin Settings Tab -->
+                    <div id="adminSettingsTab" class="admin-tab-content hidden">
+                        <h3 class="text-lg font-bold text-gray-800 mb-6">Platform Settings</h3>
+                        <form id="adminSettingsForm" class="space-y-6">
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Platform UPI ID (for receiving payments)</label>
+                                <input type="text" id="settingUpiId" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                                <p class="text-xs text-gray-500 mt-1">Users will see this UPI ID to make payments.</p>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Payment QR Code URL (Optional)</label>
+                                <input type="url" id="settingQrCodeUrl" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                                <p class="text-xs text-gray-500 mt-1">Link to an image of your payment QR code.</p>
+                            </div>
+                            <hr>
+                            <h4 class="text-md font-semibold text-gray-800">Referral Bonuses (₹)</h4>
+                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Bonus for Referrer (User who shares)</label>
+                                    <input type="number" id="settingReferralBonusGiver" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Bonus for New User (Who joins with code)</label>
+                                    <input type="number" id="settingReferralBonusReceiver" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                                </div>
+                            </div>
+                            <hr>
+                            <h4 class="text-md font-semibold text-gray-800">Social Media Links</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Facebook URL</label>
+                                    <input type="url" id="settingSocialFacebook" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Instagram URL</label>
+                                    <input type="url" id="settingSocialInstagram" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">YouTube URL</label>
+                                    <input type="url" id="settingSocialYoutube" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Telegram URL</label>
+                                    <input type="url" id="settingSocialTelegram" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">WhatsApp Link (e.g., wa.me/number)</label>
+                                    <input type="url" id="settingSocialWhatsapp" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Twitter (X) URL</label>
+                                    <input type="url" id="settingSocialTwitter" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600">Save Settings</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Add Money Modal -->
+    <div id="addMoneyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4 modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-gray-800">Add Money to Wallet</h3>
+                <button onclick="closeModal('addMoneyModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="addMoneyForm">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Amount (₹)</label>
+                    <input type="number" id="addAmount" min="10" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                </div>
+                <div class="mb-4">
+                    <p class="text-sm text-gray-600 mb-1">UPI ID: <strong id="platformUpiIdDisplay">tournament@upi</strong></p>
+                    <div id="platformQrCodeDisplayContainer" class="mb-2 hidden">
+                         <img id="platformQrCodeDisplay" src="" alt="QR Code" class="mx-auto max-w-xs border">
+                    </div>
+                    <p class="text-sm text-gray-500">Send payment to above UPI ID / Scan QR and upload screenshot with Transaction ID.</p>
+                </div>
+                <!-- NEW: UPI Transaction ID Field -->
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">UPI Transaction ID / Reference No.</label>
+                    <input type="text" id="paymentTransactionId" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Payment Screenshot</label>
+                    <input type="file" id="paymentScreenshot" accept="image/*" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">Submit Request</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div id="withdrawModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4 modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-gray-800">Withdraw Money</h3>
+                <button onclick="closeModal('withdrawModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="withdrawForm">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Amount (₹)</label>
+                    <input type="number" id="withdrawAmount" min="50" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                </div>
+                <p class="text-sm font-bold text-gray-700 mb-2">Payment Method:</p>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">UPI ID</label>
+                    <input type="text" id="withdrawUPI" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                </div>
+                <p class="text-center my-2 text-gray-500 text-sm">OR</p>
+                 <!-- NEW: Bank Details Fields -->
+                <div class="mb-2">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Account Holder Name</label>
+                    <input type="text" id="withdrawAccountHolderName" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="mb-2">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Account Number</label>
+                    <input type="text" id="withdrawAccountNumber" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">IFSC Code</label>
+                    <input type="text" id="withdrawIFSCCode" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="mb-6">
+                    <p class="text-sm text-gray-500">Minimum withdrawal amount: ₹50. Provide either UPI ID or Bank Details.</p>
+                </div>
+                <button type="submit" class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600">Submit Request</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create/Edit Tournament Modal -->
+    <div id="createEditTournamentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg p-8 max-w-3xl w-full mx-4 modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="tournamentModalTitle" class="text-lg font-bold text-gray-800">Create New Tournament</h3>
+                <button onclick="closeModal('createEditTournamentModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="createEditTournamentForm">
+                <input type="hidden" id="editingTournamentId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Tournament Name</label>
+                        <input type="text" id="tournamentName" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Game Type</label>
+                        <select id="tournamentGameType" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                            <option value="">Select Game Type</option>
+                            <option value="solo">Solo (1v1)</option>
+                            <option value="duo">Duo (2v2)</option>
+                            <option value="squad">Squad (4v4)</option>
+                            <option value="trio">Trio (3v3)</option>
+                            <option value="br_solo">BR Solo (50 Players)</option>
+                            <option value="br_duo">BR Duo</option>
+                            <option value="br_squad">BR Squad</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Entry Fee (₹)</label>
+                        <input type="number" id="tournamentEntryFee" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                     <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Total Prize Pool (₹)</label>
+                        <input type="number" id="tournamentPrizePool" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Max Players</label>
+                        <input type="number" id="tournamentMaxPlayers" min="2" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                </div>
+                <!-- NEW: Prize Distribution and Per Kill Prize -->
+                <h4 class="text-md font-semibold text-gray-700 mt-4 mb-2">Prize Distribution</h4>
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-1">1st Place Prize (₹)</label>
+                        <input type="number" id="tournamentPrize1st" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-1">2nd Place Prize (₹)</label>
+                        <input type="number" id="tournamentPrize2nd" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-1">3rd Place Prize (₹)</label>
+                        <input type="number" id="tournamentPrize3rd" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Per Kill Prize (₹)</label>
+                    <input type="number" id="tournamentPerKillPrize" min="0" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 mb-4">
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Start Date & Time</label>
+                        <input type="datetime-local" id="tournamentStartDate" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Map</label>
+                        <select id="tournamentMap" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                            <option value="">Select Map</option>
+                            <option value="bermuda">Bermuda</option>
+                            <option value="purgatory">Purgatory</option>
+                            <option value="kalahari">Kalahari</option>
+                            <option value="alpine">Alpine</option>
+                            <option value="nexterra">Nexterra</option>
+                            <option value="clash_squad">Clash Squad Specific Map</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
+                    <textarea id="tournamentDescription" rows="3" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"></textarea>
+                </div>
+                <button type="submit" id="tournamentSubmitButton" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">Create Tournament</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tournament Details Modal -->
+    <div id="tournamentDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-gray-800">Tournament Details</h3>
+                <button onclick="closeModal('tournamentDetailsModal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="tournamentDetailsContent">
+                <!-- Tournament details will be loaded here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Set Room Details Modal -->
+    <div id="setRoomDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4 modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-gray-800">Set Room Details</h3>
+                <button onclick="closeModal('setRoomDetailsModal')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="setRoomDetailsForm">
+                <input type="hidden" id="roomDetailsTournamentId">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Room ID</label>
+                    <input type="text" id="tournamentRoomId" class="w-full px-3 py-2 border rounded-lg" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Room Password</label>
+                    <input type="text" id="tournamentRoomPassword" class="w-full px-3 py-2 border rounded-lg" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">Set Details & Notify</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Declare Winner Modal -->
+    <div id="declareWinnerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg p-8 max-w-3xl w-full mx-4 modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-gray-800">Declare Winner & Kills</h3>
+                <button onclick="closeModal('declareWinnerModal')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="declareWinnerForm">
+                <input type="hidden" id="winnerTournamentId">
+                <h4 class="text-md font-semibold text-gray-700 mb-2">Select Winners (if applicable)</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-1">1st Place</label>
+                        <select id="winner1stPlace" class="w-full px-3 py-2 border rounded-lg">
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-1">2nd Place</label>
+                        <select id="winner2ndPlace" class="w-full px-3 py-2 border rounded-lg">
+                             <option value="">None</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-1">3rd Place</label>
+                        <select id="winner3rdPlace" class="w-full px-3 py-2 border rounded-lg">
+                             <option value="">None</option>
+                        </select>
+                    </div>
+                </div>
+                <hr class="my-4">
+                <h4 class="text-md font-semibold text-gray-700 mb-2">Enter Kills for Each Participant</h4>
+                <div id="participantKillsContainer" class="space-y-3 mb-4 max-h-60 overflow-y-auto">
+                    <!-- Participant kill inputs will be populated here -->
+                </div>
+                <button type="submit" class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600">Declare & Distribute Prizes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- User Profile Modal -->
+    <div id="userProfileModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4 modal-content">
+             <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-gray-800">Edit Profile</h3>
+                <button onclick="closeModal('userProfileModal')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="userProfileForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Full Name</label>
+                    <input type="text" id="profileName" class="w-full px-3 py-2 border rounded-lg" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Email (Cannot Change)</label>
+                    <input type="email" id="profileEmail" class="w-full px-3 py-2 border rounded-lg bg-gray-100" readonly>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Username (Cannot Change)</label>
+                    <input type="text" id="profileUsername" class="w-full px-3 py-2 border rounded-lg bg-gray-100" readonly>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Free Fire ID</label>
+                    <input type="text" id="profileFFID" class="w-full px-3 py-2 border rounded-lg" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Phone Number</label>
+                    <input type="tel" id="profilePhone" class="w-full px-3 py-2 border rounded-lg" required>
+                </div>
+                 <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- User Notifications Modal -->
+    <div id="userNotificationsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg p-8 max-w-lg w-full mx-4 modal-content">
+             <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-gray-800">Notifications</h3>
+                <button onclick="closeModal('userNotificationsModal')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="userNotificationsList" class="space-y-3 max-h-80 overflow-y-auto">
+                <!-- Notifications will be listed here -->
+                <p class="text-gray-500 text-center">No new notifications.</p>
+            </div>
+            <button onclick="markAllNotificationsAsRead()" class="mt-4 w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">Mark All as Read</button>
+        </div>
+    </div>
+
+    <!-- Referral Info Modal -->
+    <div id="referralInfoModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4 modal-content">
+             <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-gray-800">Refer & Earn</h3>
+                <button onclick="closeModal('referralInfoModal')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="text-center">
+                <p class="text-gray-700 mb-2">Share your referral code or link with friends!</p>
+                <p class="text-gray-600 text-sm mb-1">Your Referral Code:</p>
+                <p id="userReferralCodeDisplay" class="text-2xl font-bold text-blue-600 bg-gray-100 p-2 rounded"></p>
+                <p class="text-gray-600 text-sm mt-4 mb-1">Shareable Link:</p>
+                <input type="text" id="userReferralLinkDisplay" class="w-full text-center p-2 border rounded bg-gray-50" readonly>
+                <button onclick="copyReferralLink()" class="mt-2 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    <i class="fas fa-copy mr-1"></i> Copy Link
+                </button>
+                <div class="mt-4 text-sm text-gray-600">
+                    <p>When your friend registers using your code/link:</p>
+                    <p>You get: <strong class="text-green-600">₹<span id="referralBonusGiverDisplay">0</span></strong></p>
+                    <p>Your friend gets: <strong class="text-green-600">₹<span id="referralBonusReceiverDisplay">0</span></strong></p>
+                </div>
+                 <p class="mt-3 text-gray-600 text-sm">Total Referral Earnings: <strong class="text-green-700">₹<span id="totalReferralEarningsDisplay">0</span></strong></p>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // Application State
+        let currentUser = null;
+        let tournaments = [];
+        let users = [];
+        let paymentRequests = [];
+        let withdrawalRequests = [];
+        // NEW: Platform Configuration
+        let platformConfig = {
+            upiId: "tournament@upi",
+            qrCodeUrl: "", // Admin can set this
+            referralBonusGiver: 10, // Default bonus for referrer
+            referralBonusReceiver: 5, // Default bonus for new user
+            socialLinks: {
+                facebook: "#",
+                instagram: "#",
+                youtube: "#",
+                telegram: "#",
+                whatsapp: "#",
+                twitter: "#"
+            }
+        };
+        let activeTournamentTimers = {}; // For countdowns
+
+
+        // Initialize Application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            setupEventListeners();
+            loadSampleData(); // Load after initializeApp to use potentially loaded platformConfig
+        });
+
+        function initializeApp() {
+            // Load data from localStorage
+            const storedUser = localStorage.getItem('currentUser');
+            if (storedUser) currentUser = JSON.parse(storedUser);
+            
+            users = JSON.parse(localStorage.getItem('users')) || [];
+            tournaments = JSON.parse(localStorage.getItem('tournaments')) || [];
+            paymentRequests = JSON.parse(localStorage.getItem('paymentRequests')) || [];
+            withdrawalRequests = JSON.parse(localStorage.getItem('withdrawalRequests')) || [];
+            
+            const storedConfig = localStorage.getItem('platformConfig');
+            if (storedConfig) platformConfig = JSON.parse(storedConfig);
+            else savePlatformConfig(); // Save defaults if not found
+
+            // Check for referral code in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const refCode = urlParams.get('ref');
+            if (refCode && document.getElementById('registerReferralCode')) {
+                document.getElementById('registerReferralCode').value = refCode;
+            }
+
+
+            if (currentUser) {
+                if (currentUser.isAdmin) {
+                    showAdminDashboard();
+                } else {
+                    showUserDashboard();
+                    initializeUserSidebar(); // NEW
+                }
+            } else {
+                showAuthPage();
+            }
+        }
+
+        function setupEventListeners() {
+            // Auth form listeners
+            document.getElementById('loginTab').addEventListener('click', () => switchTab('login'));
+            document.getElementById('registerTab').addEventListener('click', () => switchTab('register'));
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            document.getElementById('registerForm').addEventListener('submit', handleRegister);
+            document.getElementById('adminLoginBtn').addEventListener('click', showAdminLogin);
+
+            // Modal form listeners
+            document.getElementById('addMoneyForm').addEventListener('submit', handleAddMoney);
+            document.getElementById('withdrawForm').addEventListener('submit', handleWithdraw);
+            document.getElementById('createEditTournamentForm').addEventListener('submit', handleCreateEditTournament);
+            document.getElementById('setRoomDetailsForm').addEventListener('submit', handleSetRoomDetails); // NEW
+            document.getElementById('declareWinnerForm').addEventListener('submit', handleDeclareWinnerSubmit); // NEW
+            document.getElementById('userProfileForm').addEventListener('submit', handleProfileUpdate); // NEW
+            
+            // Filter listener
+            document.getElementById('gameTypeFilter').addEventListener('change', filterTournaments);
+            
+            // NEW: Admin Settings Form Listener
+            if(document.getElementById('adminSettingsForm')) {
+                document.getElementById('adminSettingsForm').addEventListener('submit', handleAdminSettingsSave);
+            }
+
+            // NEW: Sidebar Toggle Listener
+            const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+            const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+            if (sidebarToggleBtn) sidebarToggleBtn.addEventListener('click', toggleUserSidebar);
+            if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', toggleUserSidebar);
+        }
+        
+        // NEW: User Sidebar Toggle
+        function initializeUserSidebar() {
+            const sidebar = document.getElementById('userSidebar');
+            const appContent = document.getElementById('app');
+            if (window.innerWidth >= 1024) { // lg breakpoint in Tailwind
+                sidebar.classList.remove('sidebar-hidden');
+                // appContent.classList.add('main-content-shifted'); // Optional: shift main content
+            } else {
+                sidebar.classList.add('sidebar-hidden');
+                // appContent.classList.remove('main-content-shifted');
+            }
+            loadSocialLinksToSidebar();
+        }
+
+        function toggleUserSidebar() {
+            const sidebar = document.getElementById('userSidebar');
+            const appContent = document.getElementById('app');
+            sidebar.classList.toggle('sidebar-hidden');
+            // Optional: shift main content
+            // if (!sidebar.classList.contains('sidebar-hidden')) {
+            //     appContent.classList.add('main-content-shifted');
+            // } else {
+            //     appContent.classList.remove('main-content-shifted');
+            // }
+        }
+        
+        // NEW: Show user dashboard specific content
+        function showUserDashboardContent(contentType) {
+            document.querySelectorAll('.user-dashboard-content').forEach(el => el.classList.add('hidden'));
+            if (contentType === 'overview') {
+                document.getElementById('userDashboardOverview').classList.remove('hidden');
+            } else if (contentType === 'tournaments') {
+                document.getElementById('userDashboardTournaments').classList.remove('hidden');
+                loadTournaments(); // Reload tournaments when this view is shown
+            }
+             if (window.innerWidth < 1024) { // Close sidebar on mobile after selection
+                toggleUserSidebar();
+            }
+        }
+
+
+        function loadSampleData() {
+            if (users.length === 0) {
+                users.push({
+                    id: Date.now(), // Use timestamp for unique ID
+                    username: "admin",
+                    password: "admin123", // Highly insecure for demo only!
+                    email: "admin@tournament.com",
+                    name: "Administrator",
+                    ffId: "ADMIN001",
+                    phone: "9876543210",
+                    wallet: 0,
+                    wins: 0,
+                    tournamentsJoined: 0,
+                    isAdmin: true,
+                    joinedTournaments: [],
+                    notifications: [], // NEW
+                    referralCode: "ADMINREF", // NEW
+                    referredByCode: null, // NEW
+                    referralEarnings: 0 // NEW
+                });
+                saveUsers();
+            }
+            if (tournaments.length === 0 && users.length > 0) { // Ensure admin exists
+                tournaments = [
+                    {
+                        id: Date.now() + 1,
+                        name: "Friday Night Solo Championship",
+                        gameType: "solo",
+                        entryFee: 25,
+                        prizePool: 500, // Total prize pool
+                        prizeDistribution: { "1st": 300, "2nd": 150, "3rd": 50 }, // NEW
+                        perKillPrize: 5, // NEW
+                        maxPlayers: 20,
+                        currentPlayers: 0,
+                        startDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16), // 2 days from now
+                        map: "bermuda",
+                        status: "registering", // registering, live, completed, cancelled
+                        description: "Weekly solo championship with exciting prizes!",
+                        registeredPlayers: [],
+                        roomId: "",
+                        roomPassword: "",
+                        winners: [], // NEW: { userId, rank, kills, prizeWon }
+                        playerKills: {} // NEW: { userId: kills }
+                    },
+                ];
+                saveTournaments();
+            }
+        }
+
+        // --- Authentication Functions ---
+        function switchTab(tab) {
+            const loginTab = document.getElementById('loginTab');
+            const registerTab = document.getElementById('registerTab');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+
+            if (tab === 'login') {
+                loginTab.classList.add('bg-blue-500', 'text-white');
+                loginTab.classList.remove('bg-gray-200', 'text-gray-700');
+                registerTab.classList.add('bg-gray-200', 'text-gray-700');
+                registerTab.classList.remove('bg-blue-500', 'text-white');
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+            } else {
+                registerTab.classList.add('bg-blue-500', 'text-white');
+                registerTab.classList.remove('bg-gray-200', 'text-gray-700');
+                loginTab.classList.add('bg-gray-200', 'text-gray-700');
+                loginTab.classList.remove('bg-blue-500', 'text-white');
+                registerForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            const user = users.find(u => (u.username === username || u.email === username) && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                if (user.isAdmin) {
+                    showAdminDashboard();
+                } else {
+                    showUserDashboard();
+                    initializeUserSidebar(); // NEW
+                }
+                showNotification('Login successful!', 'success');
+                document.getElementById('loginForm').reset();
+            } else {
+                showNotification('Invalid credentials!', 'error');
+            }
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('registerName').value;
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const ffId = document.getElementById('registerFFID').value;
+            const phone = document.getElementById('registerPhone').value; // NEW
+            const referralCodeInput = document.getElementById('registerReferralCode').value.trim(); // NEW
+
+            if (users.find(u => u.username === username || u.email === email)) {
+                showNotification('User already exists!', 'error');
+                return;
+            }
+
+            const newUser = {
+                id: Date.now(),
+                name, username, email, password, ffId, phone, // Added phone
+                wallet: 0, wins: 0, tournamentsJoined: 0, isAdmin: false,
+                joinedTournaments: [],
+                notifications: [], // NEW
+                referralCode: generateReferralCode(), // NEW
+                referredByCode: null, // NEW
+                referralEarnings: 0 // NEW
+            };
+
+            // NEW: Handle Referral
+            if (referralCodeInput) {
+                const referrer = users.find(u => u.referralCode === referralCodeInput && u.id !== newUser.id);
+                if (referrer) {
+                    newUser.referredByCode = referralCodeInput;
+                    newUser.wallet += platformConfig.referralBonusReceiver;
+                    
+                    referrer.wallet += platformConfig.referralBonusGiver;
+                    referrer.referralEarnings = (referrer.referralEarnings || 0) + platformConfig.referralBonusGiver;
+                    addNotification(referrer.id, `You received ₹${platformConfig.referralBonusGiver} for referring ${newUser.name}!`, 'referral');
+                    showNotification(`Referral successful! You and ${referrer.name} received bonuses.`, 'success');
+                } else {
+                    showNotification('Invalid referral code entered, but registration continued.', 'warning');
+                }
+            }
+
+            users.push(newUser);
+            saveUsers();
+            currentUser = newUser;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            showUserDashboard();
+            initializeUserSidebar(); // NEW
+            showNotification('Registration successful!', 'success');
+            document.getElementById('registerForm').reset();
+        }
+
+        function showAdminLogin() {
+            document.getElementById('loginUsername').value = 'admin'; // Default admin credentials
+            document.getElementById('loginPassword').value = 'admin123';
+            switchTab('login');
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            const sidebar = document.getElementById('userSidebar');
+            sidebar.classList.add('sidebar-hidden'); // Hide sidebar on logout
+            // const appContent = document.getElementById('app'); // If shifting content
+            // appContent.classList.remove('main-content-shifted');
+            showAuthPage();
+            showNotification('Logged out successfully!', 'success');
+        }
+
+        // --- Navigation Functions ---
+        function showAuthPage() {
+            document.getElementById('authPage').classList.remove('hidden');
+            document.getElementById('userDashboard').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+            document.getElementById('userSidebar').classList.add('sidebar-hidden');
+            updateNavigation();
+        }
+
+        function showUserDashboard() {
+            document.getElementById('authPage').classList.add('hidden');
+            document.getElementById('userDashboard').classList.remove('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+            updateNavigation();
+            loadUserDashboardData();
+            showUserDashboardContent('overview'); // Default to overview
+        }
+
+        function showAdminDashboard() {
+            document.getElementById('authPage').classList.add('hidden');
+            document.getElementById('userDashboard').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.remove('hidden');
+             document.getElementById('userSidebar').classList.add('sidebar-hidden');
+            updateNavigation();
+            loadAdminDashboardData();
+        }
+
+        function updateNavigation() {
+            const navButtons = document.getElementById('navButtons');
+            navButtons.innerHTML = ''; // Clear previous buttons
+            
+            if (!currentUser) return;
+
+            if (currentUser.isAdmin) {
+                navButtons.innerHTML = `
+                    <span class="text-white hidden md:inline">Welcome, Admin</span>
+                    <button onclick="logout()" class="bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 text-sm">
+                        <i class="fas fa-sign-out-alt md:mr-2"></i><span class="hidden md:inline">Logout</span>
+                    </button>
+                `;
+            } else {
+                const unreadCount = currentUser.notifications.filter(n => !n.read).length;
+                navButtons.innerHTML = `
+                    <span class="text-white hidden md:inline">Hi, ${currentUser.name.split(' ')[0]}</span>
+                    <button onclick="showUserNotifications()" class="relative text-white px-2 py-1.5 rounded-lg hover:bg-white hover:text-blue-700">
+                        <i class="fas fa-bell text-xl"></i>
+                        ${unreadCount > 0 ? `<span id="notificationBadge" class="notification-badge">${unreadCount}</span>` : ''}
+                    </button>
+                    <button onclick="logout()" class="bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 text-sm">
+                        <i class="fas fa-sign-out-alt md:mr-2"></i><span class="hidden md:inline">Logout</span>
+                    </button>
+                `;
+            }
+        }
+
+        // --- User Dashboard Functions ---
+        function loadUserDashboardData() {
+            if (!currentUser) return;
+            document.getElementById('userWelcomeName').textContent = currentUser.name;
+            document.getElementById('userWalletBalance').textContent = currentUser.wallet.toFixed(2);
+            document.getElementById('userWins').textContent = currentUser.wins;
+            document.getElementById('userTournaments').textContent = currentUser.tournamentsJoined;
+            // Tournaments are loaded when their specific section is shown via showUserDashboardContent
+        }
+
+        function loadTournaments() {
+            const grid = document.getElementById('tournamentsGrid');
+            const filter = document.getElementById('gameTypeFilter').value;
+            
+            // Clear existing timers
+            Object.values(activeTournamentTimers).forEach(clearInterval);
+            activeTournamentTimers = {};
+
+            let displayTournaments = tournaments.filter(t => t.status === 'registering' || t.status === 'live'); // Show registering or live
+            
+            if (filter) {
+                displayTournaments = displayTournaments.filter(t => t.gameType === filter);
+            }
+
+            if (displayTournaments.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8">No tournaments available right now.</div>';
+                return;
+            }
+
+            grid.innerHTML = displayTournaments.map(tournament => {
+                const isFull = tournament.currentPlayers >= tournament.maxPlayers;
+                const isJoined = currentUser.joinedTournaments.includes(tournament.id);
+                const countdownId = `countdown-${tournament.id}`;
+                
+                // Start countdown timer
+                if (tournament.status === 'registering' || tournament.status === 'live') {
+                     startTournamentCountdown(tournament.id, tournament.startDate, countdownId);
+                }
+                
+                return `
+                <div class="tournament-card text-white rounded-lg p-6 card-hover">
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="text-lg font-bold">${tournament.name}</h4>
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${tournament.status === 'live' ? 'bg-red-500 status-live' : 'bg-green-400 text-green-900'}">
+                            ${tournament.status.toUpperCase()}
+                        </span>
+                    </div>
+                    
+                    <div class="space-y-2 mb-4 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-blue-100">Game Type:</span>
+                            <span class="font-medium">${getGameTypeLabel(tournament.gameType)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-blue-100">Entry:</span>
+                            <span class="font-medium">₹${tournament.entryFee}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-blue-100">Prize Pool:</span>
+                            <span class="font-medium text-yellow-300">₹${tournament.prizePool}</span>
+                        </div>
+                         <div class="flex justify-between">
+                            <span class="text-blue-100">Per Kill:</span>
+                            <span class="font-medium text-yellow-300">₹${tournament.perKillPrize || 0}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-blue-100">Players:</span>
+                            <span class="font-medium">${tournament.currentPlayers}/${tournament.maxPlayers}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-blue-100">Starts:</span>
+                            <span class="font-medium">${formatDateTime(tournament.startDate)}</span>
+                        </div>
+                        <!-- NEW: Countdown Timer -->
+                        <div id="${countdownId}" class="text-center font-bold text-yellow-300 text-lg my-2">
+                            Loading countdown...
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-600 bg-opacity-50 rounded-lg p-3 mb-4">
+                        <div class="w-full bg-blue-400 rounded-full h-2.5">
+                            <div class="bg-yellow-400 h-2.5 rounded-full" style="width: ${(tournament.currentPlayers / tournament.maxPlayers) * 100}%"></div>
+                        </div>
+                        <p class="text-xs text-blue-100 mt-1">${tournament.maxPlayers - tournament.currentPlayers} slots remaining</p>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <button onclick="viewTournamentDetails(${tournament.id})" class="flex-1 bg-white text-blue-600 py-2 px-4 rounded-lg font-medium hover:bg-gray-100 transition duration-200">
+                            Details
+                        </button>
+                        ${isJoined ? 
+                            `<button class="flex-1 bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-medium cursor-not-allowed">Joined</button>` :
+                         isFull ?
+                            `<button class="flex-1 bg-red-400 text-red-900 py-2 px-4 rounded-lg font-medium cursor-not-allowed">Full</button>` :
+                            `<button onclick="joinTournament(${tournament.id})" class="flex-1 bg-yellow-400 text-yellow-900 py-2 px-4 rounded-lg font-medium hover:bg-yellow-300 transition duration-200">Join Now</button>`
+                        }
+                    </div>
+                </div>
+            `}).join('');
+        }
+        
+        function startTournamentCountdown(tournamentId, startTime, elementId) {
+            const countdownElement = document.getElementById(elementId);
+            if (!countdownElement) return;
+
+            if (activeTournamentTimers[tournamentId]) {
+                clearInterval(activeTournamentTimers[tournamentId]);
+            }
+
+            const interval = setInterval(() => {
+                const now = new Date().getTime();
+                const distance = new Date(startTime).getTime() - now;
+
+                if (distance < 0) {
+                    clearInterval(interval);
+                    const tournament = tournaments.find(t => t.id === tournamentId);
+                    if (tournament && tournament.status === 'registering') {
+                        // tournament.status = 'live'; // Or admin has to manually set to live
+                        // saveTournaments();
+                        // loadTournaments(); // Refresh to show status change
+                        countdownElement.innerHTML = tournament.status === 'live' ? "Tournament is LIVE!" : "Starting Soon / Check Status";
+                    } else if (tournament && tournament.status === 'live') {
+                         countdownElement.innerHTML = "Tournament is LIVE!";
+                    }
+                     else {
+                        countdownElement.innerHTML = "Tournament Started or Ended";
+                    }
+                    return;
+                }
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                countdownElement.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+            }, 1000);
+            activeTournamentTimers[tournamentId] = interval;
+        }
+
+
+        function joinTournament(tournamentId) {
+            const tournament = tournaments.find(t => t.id === tournamentId);
+            if (!tournament) return showNotification('Tournament not found!', 'error');
+            if (tournament.currentPlayers >= tournament.maxPlayers) return showNotification('Tournament is full!', 'error');
+            if (currentUser.wallet < tournament.entryFee) return showNotification('Insufficient wallet balance!', 'error');
+            if (currentUser.joinedTournaments.includes(tournamentId)) return showNotification('Already joined!', 'error');
+
+            currentUser.wallet -= tournament.entryFee;
+            currentUser.joinedTournaments.push(tournamentId);
+            currentUser.tournamentsJoined++;
+            tournament.currentPlayers++;
+            tournament.registeredPlayers.push({ userId: currentUser.id, username: currentUser.username, ffId: currentUser.ffId, joinedAt: new Date().toISOString() });
+            
+            updateCurrentUserInUsersArray(); // Make sure 'users' array is also updated
+            saveTournaments();
+            loadUserDashboardData();
+            loadTournaments(); // Refresh tournament list
+            showNotification('Successfully joined tournament!', 'success');
+        }
+
+        function viewTournamentDetails(tournamentId) {
+            const tournament = tournaments.find(t => t.id === tournamentId);
+            if (!tournament) return showNotification('Tournament not found!', 'error');
+            
+            const content = document.getElementById('tournamentDetailsContent');
+            const prizeDistHtml = tournament.prizeDistribution ? `
+                <p>1st: ₹${tournament.prizeDistribution['1st'] || 0}</p>
+                <p>2nd: ₹${tournament.prizeDistribution['2nd'] || 0}</p>
+                <p>3rd: ₹${tournament.prizeDistribution['3rd'] || 0}</p>
+            ` : '<p>Not specified</p>';
+
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-lg">
+                        <h3 class="text-2xl font-bold mb-2">${tournament.name}</h3>
+                        <p class="text-blue-100">${tournament.description || 'No description available'}</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-bold text-gray-800 mb-3">Tournament Info</h4>
+                            <div class="space-y-2 text-sm">
+                                <p><strong>Game Type:</strong> ${getGameTypeLabel(tournament.gameType)}</p>
+                                <p><strong>Map:</strong> ${tournament.map}</p>
+                                <p><strong>Start Time:</strong> ${formatDateTime(tournament.startDate)}</p>
+                                <p><strong>Status:</strong> <span class="font-medium ${getStatusClass(tournament.status, true)}">${tournament.status.toUpperCase()}</span></p>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-bold text-gray-800 mb-3">Prizes & Players</h4>
+                            <div class="space-y-2 text-sm">
+                                <p><strong>Entry Fee:</strong> <span class="text-red-600">₹${tournament.entryFee}</span></p>
+                                <p><strong>Total Prize Pool:</strong> <span class="text-green-600">₹${tournament.prizePool}</span></p>
+                                <p><strong>Per Kill Prize:</strong> <span class="text-yellow-600">₹${tournament.perKillPrize || 0}</span></p>
+                                <h5 class="font-semibold mt-2">Winner Prizes:</h5>
+                                ${prizeDistHtml}
+                                <p class="mt-2"><strong>Players:</strong> ${tournament.currentPlayers}/${tournament.maxPlayers} (${tournament.maxPlayers - tournament.currentPlayers} slots left)</p>
+                            </div>
+                        </div>
+                    </div>
+                    ${tournament.registeredPlayers.length > 0 ? `
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-bold text-gray-800 mb-3">Registered Players (${tournament.registeredPlayers.length})</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                                ${tournament.registeredPlayers.map(player => `<div class="bg-white p-2 rounded border text-xs"><span class="font-medium">${player.username}</span> (${player.ffId})</div>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    ${(tournament.roomId && tournament.roomPassword && (currentUser.isAdmin || currentUser.joinedTournaments.includes(tournament.id))) ? `
+                        <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                            <h4 class="font-bold text-green-800 mb-3">Room Details (Visible if Joined)</h4>
+                            <p><strong>Room ID:</strong> <span class="font-mono font-bold">${tournament.roomId}</span></p>
+                            <p><strong>Password:</strong> <span class="font-mono font-bold">${tournament.roomPassword}</span></p>
+                        </div>
+                    ` : ''}
+                    ${!currentUser.isAdmin && tournament.status === 'registering' ? `
+                        <div class="flex space-x-4 mt-6">
+                            ${!currentUser.joinedTournaments.includes(tournament.id) && tournament.currentPlayers < tournament.maxPlayers ? 
+                                `<button onclick="joinTournament(${tournament.id}); closeModal('tournamentDetailsModal')" class="flex-1 bg-blue-500 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-600">Join - ₹${tournament.entryFee}</button>` :
+                             tournament.currentPlayers >= tournament.maxPlayers && !currentUser.joinedTournaments.includes(tournament.id) ?
+                                `<button class="flex-1 bg-red-400 text-red-800 py-3 px-6 rounded-lg font-medium cursor-not-allowed">Tournament Full</button>` :
+                                `<button class="flex-1 bg-gray-400 text-gray-700 py-3 px-6 rounded-lg font-medium cursor-not-allowed">Already Joined</button>`
+                            }
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            showModal('tournamentDetailsModal');
+        }
+
+        // --- Admin Dashboard Functions ---
+        function loadAdminDashboardData() {
+            document.getElementById('totalUsers').textContent = users.filter(u => !u.isAdmin).length;
+            document.getElementById('activeTournaments').textContent = tournaments.filter(t => t.status === 'registering' || t.status === 'live').length;
+            document.getElementById('totalRevenue').textContent = calculateTotalRevenue().toFixed(2);
+            document.getElementById('pendingApprovals').textContent = paymentRequests.filter(p => p.status === 'pending').length + withdrawalRequests.filter(w => w.status === 'pending').length;
+            showAdminTab('tournaments'); // Default tab
+        }
+
+        function showAdminTab(tabName) {
+            document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            const activeBtn = Array.from(document.querySelectorAll('.admin-tab-btn')).find(btn => btn.textContent.toLowerCase().includes(tabName));
+            if (activeBtn) {
+                activeBtn.classList.remove('border-transparent', 'text-gray-500');
+                activeBtn.classList.add('border-blue-500', 'text-blue-600');
+            }
+            
+            document.querySelectorAll('.admin-tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.getElementById(`admin${tabName.charAt(0).toUpperCase() + tabName.slice(1)}Tab`).classList.remove('hidden');
+            
+            switch(tabName) {
+                case 'tournaments': loadAdminTournaments(); break;
+                case 'users': loadAdminUsers(); break;
+                case 'payments': loadAdminPayments(); break;
+                case 'withdrawals': loadAdminWithdrawals(); break;
+                case 'settings': loadAdminSettings(); break; // NEW
+            }
+        }
+
+        function loadAdminTournaments() {
+            const container = document.getElementById('adminTournamentsList');
+            if (tournaments.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-8">No tournaments created yet.</div>';
+                return;
+            }
+            container.innerHTML = tournaments.map(t => `
+                <div class="bg-gray-50 rounded-lg p-4 mb-4 shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="text-lg font-bold text-gray-800">${t.name}</h4>
+                            <p class="text-sm text-gray-600">${getGameTypeLabel(t.gameType)} • ${t.map} • Starts: ${formatDateTime(t.startDate)}</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusClass(t.status, true)}">${t.status.toUpperCase()}</span>
+                            <div class="relative">
+                                <button onclick="toggleTournamentMenu(${t.id}, event)" class="p-2 hover:bg-gray-200 rounded-full"><i class="fas fa-ellipsis-v"></i></button>
+                                <div id="menu-${t.id}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-xl z-20 py-1">
+                                    <button onclick="showCreateTournamentModal(${t.id})" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit</button>
+                                    ${t.status === 'registering' ? `<button onclick="showSetRoomDetailsModal(${t.id})" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Set Room Details</button>` : ''}
+                                    ${(t.status === 'live' || t.status === 'registering') && t.registeredPlayers.length > 0 ? `<button onclick="showDeclareWinnerModal(${t.id})" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Declare Winner</button>` : ''}
+                                    <button onclick="deleteTournament(${t.id})" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
+                        <p><strong>Registered:</strong> ${t.currentPlayers}/${t.maxPlayers}</p>
+                        <p><strong>Entry:</strong> ₹${t.entryFee}</p>
+                        <p><strong>Prize Pool:</strong> ₹${t.prizePool}</p>
+                        <p><strong>Per Kill:</strong> ₹${t.perKillPrize || 0}</p>
+                    </div>
+                    ${t.roomId ? `<p class="text-xs text-green-600"><strong>Room:</strong> ${t.roomId} / ${t.roomPassword}</p>` : ''}
+                    ${t.winners && t.winners.length > 0 ? `<p class="text-xs text-blue-600"><strong>Winner(s):</strong> ${t.winners.map(w => getUserById(w.userId)?.username || 'N/A').join(', ')}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function loadAdminUsers() {
+            const tbody = document.getElementById('adminUsersTable');
+            const regularUsers = users.filter(u => !u.isAdmin);
+            tbody.innerHTML = regularUsers.map(user => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${user.name}</div>
+                        <div class="text-xs text-gray-500">@${user.username}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${user.email}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${user.phone}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${user.ffId}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">₹${user.wallet.toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <button onclick="editUserWallet(${user.id})" class="text-blue-600 hover:text-blue-900 mr-2"><i class="fas fa-edit"></i> Wallet</button>
+                        <button onclick="viewUserDetails(${user.id})" class="text-green-600 hover:text-green-900"><i class="fas fa-eye"></i> Details</button>
+                    </td>
+                </tr>
+            `).join('');
+            if (regularUsers.length === 0) tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-gray-500">No users found.</td></tr>`;
+        }
+        
+        function loadAdminPayments() {
+            const container = document.getElementById('adminPaymentsList');
+            const pendingPayments = paymentRequests.filter(p => p.status === 'pending'); // Show pending first, then others
+            const processedPayments = paymentRequests.filter(p => p.status !== 'pending').sort((a,b) => new Date(b.date) - new Date(a.date));
+            const displayPayments = [...pendingPayments, ...processedPayments];
+
+            if (displayPayments.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-8">No payment requests.</div>';
+                return;
+            }
+            container.innerHTML = displayPayments.map(p => `
+                <div class="bg-gray-50 rounded-lg p-4 mb-4 shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="text-md font-bold text-gray-800">Payment: ₹${p.amount}</h4>
+                            <p class="text-sm text-gray-600">User: ${getUserById(p.userId)?.name || 'Unknown'} (ID: ${p.userId})</p>
+                            <p class="text-xs text-gray-500">Date: ${formatDateTime(p.date)}</p>
+                            <p class="text-xs text-gray-500">Transaction ID: ${p.transactionId || 'Not Provided'}</p>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusClass(p.status, true)}">${p.status.toUpperCase()}</span>
+                    </div>
+                    ${p.screenshot ? `<img src="${p.screenshot}" alt="Screenshot" class="w-32 h-auto object-cover rounded border cursor-pointer mb-2" onclick="viewScreenshot('${p.screenshot}')">` : ''}
+                    ${p.status === 'pending' ? `
+                        <div class="flex space-x-2">
+                            <button onclick="approvePayment(${p.id})" class="bg-green-500 text-white px-3 py-1.5 rounded hover:bg-green-600 text-sm">Approve</button>
+                            <button onclick="rejectPayment(${p.id})" class="bg-red-500 text-white px-3 py-1.5 rounded hover:bg-red-600 text-sm">Reject</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function loadAdminWithdrawals() {
+            const container = document.getElementById('adminWithdrawalsList');
+            const pendingWithdrawals = withdrawalRequests.filter(w => w.status === 'pending');
+            const processedWithdrawals = withdrawalRequests.filter(w => w.status !== 'pending').sort((a,b) => new Date(b.date) - new Date(a.date));
+            const displayWithdrawals = [...pendingWithdrawals, ...processedWithdrawals];
+
+            if (displayWithdrawals.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-8">No withdrawal requests.</div>';
+                return;
+            }
+            container.innerHTML = displayWithdrawals.map(w => `
+                <div class="bg-gray-50 rounded-lg p-4 mb-4 shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h4 class="text-md font-bold text-gray-800">Withdrawal: ₹${w.amount}</h4>
+                            <p class="text-sm text-gray-600">User: ${getUserById(w.userId)?.name || 'Unknown'} (ID: ${w.userId})</p>
+                            <p class="text-xs text-gray-500">Date: ${formatDateTime(w.date)}</p>
+                            ${w.upiId ? `<p class="text-xs text-gray-500">UPI: ${w.upiId}</p>` : ''}
+                            ${w.bankDetails && w.bankDetails.accountNumber ? `
+                                <p class="text-xs text-gray-500">Bank: ${w.bankDetails.accountHolderName}, A/C: ${w.bankDetails.accountNumber}, IFSC: ${w.bankDetails.ifscCode}</p>
+                            ` : ''}
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium ${getStatusClass(w.status, true)}">${w.status.toUpperCase()}</span>
+                    </div>
+                     ${w.status === 'pending' ? `
+                        <div class="flex space-x-2">
+                            <button onclick="approveWithdrawal(${w.id})" class="bg-green-500 text-white px-3 py-1.5 rounded hover:bg-green-600 text-sm">Approve</button>
+                            <button onclick="rejectWithdrawal(${w.id})" class="bg-red-500 text-white px-3 py-1.5 rounded hover:bg-red-600 text-sm">Reject</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+        
+        // NEW: Admin Settings Functions
+        function loadAdminSettings() {
+            document.getElementById('settingUpiId').value = platformConfig.upiId;
+            document.getElementById('settingQrCodeUrl').value = platformConfig.qrCodeUrl || "";
+            document.getElementById('settingReferralBonusGiver').value = platformConfig.referralBonusGiver;
+            document.getElementById('settingReferralBonusReceiver').value = platformConfig.referralBonusReceiver;
+            document.getElementById('settingSocialFacebook').value = platformConfig.socialLinks.facebook || "";
+            document.getElementById('settingSocialInstagram').value = platformConfig.socialLinks.instagram || "";
+            document.getElementById('settingSocialYoutube').value = platformConfig.socialLinks.youtube || "";
+            document.getElementById('settingSocialTelegram').value = platformConfig.socialLinks.telegram || "";
+            document.getElementById('settingSocialWhatsapp').value = platformConfig.socialLinks.whatsapp || "";
+            document.getElementById('settingSocialTwitter').value = platformConfig.socialLinks.twitter || "";
+        }
+
+        function handleAdminSettingsSave(e) {
+            e.preventDefault();
+            platformConfig.upiId = document.getElementById('settingUpiId').value;
+            platformConfig.qrCodeUrl = document.getElementById('settingQrCodeUrl').value;
+            platformConfig.referralBonusGiver = parseInt(document.getElementById('settingReferralBonusGiver').value) || 0;
+            platformConfig.referralBonusReceiver = parseInt(document.getElementById('settingReferralBonusReceiver').value) || 0;
+            platformConfig.socialLinks.facebook = document.getElementById('settingSocialFacebook').value;
+            platformConfig.socialLinks.instagram = document.getElementById('settingSocialInstagram').value;
+            platformConfig.socialLinks.youtube = document.getElementById('settingSocialYoutube').value;
+            platformConfig.socialLinks.telegram = document.getElementById('settingSocialTelegram').value;
+            platformConfig.socialLinks.whatsapp = document.getElementById('settingSocialWhatsapp').value;
+            platformConfig.socialLinks.twitter = document.getElementById('settingSocialTwitter').value;
+            
+            savePlatformConfig();
+            loadSocialLinksToSidebar(); // Update sidebar if user is logged in
+            showNotification('Platform settings saved!', 'success');
+        }
+
+
+        // --- Wallet Functions ---
+        function showAddMoney() {
+            document.getElementById('platformUpiIdDisplay').textContent = platformConfig.upiId;
+            const qrContainer = document.getElementById('platformQrCodeDisplayContainer');
+            const qrImg = document.getElementById('platformQrCodeDisplay');
+            if (platformConfig.qrCodeUrl) {
+                qrImg.src = platformConfig.qrCodeUrl;
+                qrContainer.classList.remove('hidden');
+            } else {
+                qrContainer.classList.add('hidden');
+            }
+            showModal('addMoneyModal');
+        }
+
+        function showWithdraw() {
+            showModal('withdrawModal');
+        }
+
+        function handleAddMoney(e) {
+            e.preventDefault();
+            const amount = parseInt(document.getElementById('addAmount').value);
+            const transactionId = document.getElementById('paymentTransactionId').value; // NEW
+            const screenshotFile = document.getElementById('paymentScreenshot').files[0];
+            
+            if (!screenshotFile) return showNotification('Please upload payment screenshot!', 'error');
+            if (!transactionId) return showNotification('Please enter UPI Transaction ID!', 'error');
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const paymentRequest = {
+                    id: Date.now(), userId: currentUser.id, amount, transactionId, // Added transactionId
+                    screenshot: event.target.result, status: 'pending', date: new Date().toISOString()
+                };
+                paymentRequests.push(paymentRequest);
+                savePaymentRequests();
+                closeModal('addMoneyModal');
+                document.getElementById('addMoneyForm').reset();
+                showNotification('Payment request submitted! Admin will verify.', 'success');
+            };
+            reader.readAsDataURL(screenshotFile);
+        }
+
+        function handleWithdraw(e) {
+            e.preventDefault();
+            const amount = parseInt(document.getElementById('withdrawAmount').value);
+            const upiId = document.getElementById('withdrawUPI').value;
+            // NEW: Bank Details
+            const accountHolderName = document.getElementById('withdrawAccountHolderName').value;
+            const accountNumber = document.getElementById('withdrawAccountNumber').value;
+            const ifscCode = document.getElementById('withdrawIFSCCode').value;
+
+            if (amount > currentUser.wallet) return showNotification('Insufficient wallet balance!', 'error');
+            if (amount < 50) return showNotification('Minimum withdrawal amount is ₹50!', 'error');
+            if (!upiId && !accountNumber) return showNotification('Please provide UPI ID or Bank Account details!', 'error');
+            if (accountNumber && (!accountHolderName || !ifscCode)) return showNotification('Please provide all bank details if using bank transfer!', 'error');
+
+
+            const withdrawalRequest = {
+                id: Date.now(), userId: currentUser.id, amount, upiId, 
+                bankDetails: accountNumber ? { accountHolderName, accountNumber, ifscCode } : null, // NEW
+                status: 'pending', date: new Date().toISOString()
+            };
+            withdrawalRequests.push(withdrawalRequest);
+            saveWithdrawalRequests();
+            closeModal('withdrawModal');
+            document.getElementById('withdrawForm').reset();
+            showNotification('Withdrawal request submitted!', 'success');
+        }
+
+        function approvePayment(paymentId) {
+            const payment = paymentRequests.find(p => p.id === paymentId);
+            if (!payment) return;
+            const user = users.find(u => u.id === payment.userId);
+            if (!user) return;
+
+            user.wallet += payment.amount;
+            payment.status = 'approved';
+            if (currentUser && currentUser.id === user.id) currentUser.wallet = user.wallet;
+            
+            addNotification(user.id, `Your payment of ₹${payment.amount} has been approved.`, 'payment_approved');
+            updateCurrentUserInUsersArray();
+            savePaymentRequests();
+            loadAdminPayments();
+            loadAdminDashboardData(); // Update stats
+            showNotification(`Payment of ₹${payment.amount} approved for ${user.name}.`, 'success');
+        }
+
+        function rejectPayment(paymentId) {
+            const payment = paymentRequests.find(p => p.id === paymentId);
+            if (!payment) return;
+            payment.status = 'rejected';
+            addNotification(payment.userId, `Your payment of ₹${payment.amount} has been rejected. Please contact support.`, 'payment_rejected');
+            savePaymentRequests();
+            loadAdminPayments();
+            loadAdminDashboardData(); // Update stats
+            showNotification('Payment request rejected.', 'info');
+        }
+
+        function approveWithdrawal(withdrawalId) {
+            const withdrawal = withdrawalRequests.find(w => w.id === withdrawalId);
+            if (!withdrawal) return;
+            const user = users.find(u => u.id === withdrawal.userId);
+            if (!user) return;
+            if (user.wallet < withdrawal.amount) { // Double check balance before processing
+                withdrawal.status = 'failed_insufficient_balance';
+                 addNotification(user.id, `Your withdrawal of ₹${withdrawal.amount} failed due to insufficient balance at time of processing.`, 'withdrawal_failed');
+                showNotification(`Withdrawal for ${user.name} failed (insufficient balance).`, 'error');
+            } else {
+                user.wallet -= withdrawal.amount;
+                withdrawal.status = 'approved'; // Or 'processed'
+                addNotification(user.id, `Your withdrawal of ₹${withdrawal.amount} has been approved and processed.`, 'withdrawal_approved');
+                showNotification(`Withdrawal of ₹${withdrawal.amount} approved for ${user.name}.`, 'success');
+            }
+            if (currentUser && currentUser.id === user.id) currentUser.wallet = user.wallet;
+            updateCurrentUserInUsersArray();
+            saveWithdrawalRequests();
+            loadAdminWithdrawals();
+            loadAdminDashboardData(); // Update stats
+        }
+
+        function rejectWithdrawal(withdrawalId) {
+            const withdrawal = withdrawalRequests.find(w => w.id === withdrawalId);
+            if (!withdrawal) return;
+            withdrawal.status = 'rejected';
+            addNotification(withdrawal.userId, `Your withdrawal request of ₹${withdrawal.amount} has been rejected. Please contact support.`, 'withdrawal_rejected');
+            saveWithdrawalRequests();
+            loadAdminWithdrawals();
+            loadAdminDashboardData(); // Update stats
+            showNotification('Withdrawal request rejected.', 'info');
+        }
+
+        // --- Tournament Management (Admin) ---
+        function showCreateTournamentModal(tournamentIdToEdit = null) {
+            const form = document.getElementById('createEditTournamentForm');
+            form.reset();
+            document.getElementById('editingTournamentId').value = "";
+             document.getElementById('tournamentModalTitle').textContent = "Create New Tournament";
+             document.getElementById('tournamentSubmitButton').textContent = "Create Tournament";
+
+            if (tournamentIdToEdit !== null) {
+                const tournament = tournaments.find(t => t.id === tournamentIdToEdit);
+                if (tournament) {
+                    document.getElementById('tournamentModalTitle').textContent = "Edit Tournament";
+                    document.getElementById('tournamentSubmitButton').textContent = "Update Tournament";
+                    document.getElementById('editingTournamentId').value = tournament.id;
+                    document.getElementById('tournamentName').value = tournament.name;
+                    document.getElementById('tournamentGameType').value = tournament.gameType;
+                    document.getElementById('tournamentEntryFee').value = tournament.entryFee;
+                    document.getElementById('tournamentPrizePool').value = tournament.prizePool;
+                    document.getElementById('tournamentMaxPlayers').value = tournament.maxPlayers;
+                    document.getElementById('tournamentStartDate').value = tournament.startDate.slice(0,16); // For datetime-local format
+                    document.getElementById('tournamentMap').value = tournament.map;
+                    document.getElementById('tournamentDescription').value = tournament.description || "";
+                    // NEW: Prize distribution and per kill
+                    document.getElementById('tournamentPrize1st').value = tournament.prizeDistribution?.['1st'] || "";
+                    document.getElementById('tournamentPrize2nd').value = tournament.prizeDistribution?.['2nd'] || "";
+                    document.getElementById('tournamentPrize3rd').value = tournament.prizeDistribution?.['3rd'] || "";
+                    document.getElementById('tournamentPerKillPrize').value = tournament.perKillPrize || "";
+                }
+            }
+            showModal('createEditTournamentModal');
+        }
+
+        function handleCreateEditTournament(e) {
+            e.preventDefault();
+            const editingId = document.getElementById('editingTournamentId').value;
+            const prizeDistribution = {
+                '1st': parseInt(document.getElementById('tournamentPrize1st').value) || 0,
+                '2nd': parseInt(document.getElementById('tournamentPrize2nd').value) || 0,
+                '3rd': parseInt(document.getElementById('tournamentPrize3rd').value) || 0,
+            };
+            const perKillPrize = parseInt(document.getElementById('tournamentPerKillPrize').value) || 0;
+            const totalDistributedPrize = prizeDistribution['1st'] + prizeDistribution['2nd'] + prizeDistribution['3rd'];
+            const prizePool = parseInt(document.getElementById('tournamentPrizePool').value);
+
+            // Basic check, more complex validation could be added for kill prizes vs pool
+            // if (totalDistributedPrize > prizePool) {
+            //     showNotification('Sum of 1st, 2nd, 3rd prizes cannot exceed total prize pool!', 'error');
+            //     return;
+            // }
+
+            const tournamentData = {
+                name: document.getElementById('tournamentName').value,
+                gameType: document.getElementById('tournamentGameType').value,
+                entryFee: parseInt(document.getElementById('tournamentEntryFee').value),
+                prizePool: prizePool,
+                prizeDistribution, // NEW
+                perKillPrize,      // NEW
+                maxPlayers: parseInt(document.getElementById('tournamentMaxPlayers').value),
+                startDate: document.getElementById('tournamentStartDate').value + ':00Z', // Ensure it's a full ISO string if needed, or handle timezone
+                map: document.getElementById('tournamentMap').value,
+                description: document.getElementById('tournamentDescription').value,
+            };
+
+            if (editingId) { // Editing existing tournament
+                const tournamentIndex = tournaments.findIndex(t => t.id === parseInt(editingId));
+                if (tournamentIndex > -1) {
+                    tournaments[tournamentIndex] = { ...tournaments[tournamentIndex], ...tournamentData };
+                    showNotification('Tournament updated successfully!', 'success');
+                }
+            } else { // Creating new tournament
+                const newTournament = {
+                    ...tournamentData,
+                    id: Date.now(),
+                    currentPlayers: 0,
+                    status: 'registering',
+                    registeredPlayers: [],
+                    roomId: "", roomPassword: "", winners: [], playerKills: {}
+                };
+                tournaments.push(newTournament);
+                showNotification('Tournament created successfully!', 'success');
+            }
+            
+            saveTournaments();
+            closeModal('createEditTournamentModal');
+            loadAdminTournaments();
+            if (!currentUser.isAdmin) loadTournaments(); // Refresh user view if they somehow created one (not typical)
+        }
+        
+        // NEW: Set Room Details Modal
+        function showSetRoomDetailsModal(tournamentId) {
+            const tournament = tournaments.find(t => t.id === tournamentId);
+            if (!tournament) return;
+            document.getElementById('roomDetailsTournamentId').value = tournamentId;
+            document.getElementById('tournamentRoomId').value = tournament.roomId || "";
+            document.getElementById('tournamentRoomPassword').value = tournament.roomPassword || "";
+            showModal('setRoomDetailsModal');
+        }
+
+        function handleSetRoomDetails(e) {
+            e.preventDefault();
+            const tournamentId = parseInt(document.getElementById('roomDetailsTournamentId').value);
+            const roomId = document.getElementById('tournamentRoomId').value;
+            const roomPassword = document.getElementById('tournamentRoomPassword').value;
+
+            const tournament = tournaments.find(t => t.id === tournamentId);
+            if (!tournament) return showNotification('Tournament not found!', 'error');
+
+            tournament.roomId = roomId;
+            tournament.roomPassword = roomPassword;
+            tournament.status = 'live'; // Or 'ready_to_start' depending on flow
+
+            // Notify registered players
+            tournament.registeredPlayers.forEach(p => {
+                addNotification(p.userId, `Room details for "${tournament.name}" are ready! ID: ${roomId}, Pass: ${roomPassword}. Game starts at ${formatDateTime(tournament.startDate)}.`, 'room_details');
+            });
+            
+            saveTournaments();
+            closeModal('setRoomDetailsModal');
+            loadAdminTournaments();
+            showNotification('Room details set and players notified!', 'success');
+        }
+        
+        // NEW: Declare Winner Modal
+        function showDeclareWinnerModal(tournamentId) {
+            const tournament = tournaments.find(t => t.id === tournamentId);
+            if (!tournament) return;
+            if (tournament.registeredPlayers.length === 0) return showNotification('No players registered to declare winner!', 'warning');
+
+            document.getElementById('winnerTournamentId').value = tournamentId;
+            const selects = ['winner1stPlace', 'winner2ndPlace', 'winner3rdPlace'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">None</option>'; // Reset
+                tournament.registeredPlayers.forEach(p => {
+                    const user = getUserById(p.userId);
+                    if (user) {
+                        select.innerHTML += `<option value="${user.id}">${user.name} (@${user.username})</option>`;
+                    }
+                });
+            });
+
+            const killsContainer = document.getElementById('participantKillsContainer');
+            killsContainer.innerHTML = ''; // Reset
+            tournament.registeredPlayers.forEach(p => {
+                const user = getUserById(p.userId);
+                if (user) {
+                    killsContainer.innerHTML += `
+                        <div class="flex items-center justify-between">
+                            <label class="text-sm text-gray-700">${user.name} (@${user.username}) Kills:</label>
+                            <input type="number" min="0" class="kill-input w-20 px-2 py-1 border rounded-lg" data-userid="${user.id}" value="${tournament.playerKills?.[user.id] || 0}">
+                        </div>
+                    `;
+                }
+            });
+            showModal('declareWinnerModal');
+        }
+        
+        function handleDeclareWinnerSubmit(e) {
+            e.preventDefault();
+            const tournamentId = parseInt(document.getElementById('winnerTournamentId').value);
+            const tournament = tournaments.find(t => t.id === tournamentId);
+            if (!tournament) return showNotification('Tournament not found!', 'error');
+
+            tournament.winners = [];
+            tournament.playerKills = {};
+            let totalPrizeDistributed = 0;
+
+            // Get ranked winners
+            const ranks = {
+                '1st': document.getElementById('winner1stPlace').value,
+                '2nd': document.getElementById('winner2ndPlace').value,
+                '3rd': document.getElementById('winner3rdPlace').value
+            };
+
+            for (const rank in ranks) {
+                const userId = parseInt(ranks[rank]);
+                if (userId) {
+                    const user = users.find(u => u.id === userId);
+                    if (user) {
+                        const prize = tournament.prizeDistribution?.[rank] || 0;
+                        user.wallet += prize;
+                        user.wins = (user.wins || 0) + 1; // Assuming only 1st place counts as "win" for global stats, adjust if needed
+                        tournament.winners.push({ userId, rank, prizeWon: prize, kills: 0 /* will be updated below */ });
+                        totalPrizeDistributed += prize;
+                        addNotification(userId, `Congratulations! You won ${rank} place in "${tournament.name}" and received ₹${prize}.`, 'tournament_win');
+                    }
+                }
+            }
+            
+            // Get kills and distribute kill prizes
+            document.querySelectorAll('.kill-input').forEach(input => {
+                const userId = parseInt(input.dataset.userid);
+                const kills = parseInt(input.value) || 0;
+                const user = users.find(u => u.id === userId);
+                if (user && kills > 0) {
+                    tournament.playerKills[userId] = kills;
+                    const killPrizeAmount = kills * (tournament.perKillPrize || 0);
+                    if (killPrizeAmount > 0) {
+                        user.wallet += killPrizeAmount;
+                        totalPrizeDistributed += killPrizeAmount;
+                        addNotification(userId, `You earned ₹${killPrizeAmount} for ${kills} kills in "${tournament.name}".`, 'kill_prize');
+                    }
+                    // Update kills for ranked winners if they are also in this list
+                    const winnerEntry = tournament.winners.find(w => w.userId === userId);
+                    if (winnerEntry) winnerEntry.kills = kills;
+                }
+            });
+            
+            // Check if total prize distributed exceeds prize pool (simple check)
+            if (totalPrizeDistributed > tournament.prizePool) {
+                 showNotification(`Warning: Total distributed prize (₹${totalPrizeDistributed}) exceeds prize pool (₹${tournament.prizePool}). Please review prizes.`, 'warning');
+                 // Could prevent saving or allow admin to override
+            }
+
+            tournament.status = 'completed';
+            saveUsers(); // users wallet and wins updated
+            saveTournaments(); // tournament status, winners, kills updated
+            updateAllCurrentUserInstances(); // Important if admin is also a regular user who won
+            closeModal('declareWinnerModal');
+            loadAdminTournaments();
+            showNotification('Winners declared and prizes distributed!', 'success');
+        }
+
+
+        function deleteTournament(tournamentId) {
+            if (!confirm('Are you sure? This will refund entry fees to joined users and cannot be undone.')) return;
+            const tournamentIndex = tournaments.findIndex(t => t.id === tournamentId);
+            if (tournamentIndex === -1) return;
+            const tournament = tournaments[tournamentIndex];
+
+            // Refund entry fees
+            tournament.registeredPlayers.forEach(pInfo => {
+                const user = users.find(u => u.id === pInfo.userId);
+                if (user) {
+                    user.wallet += tournament.entryFee;
+                    user.joinedTournaments = user.joinedTournaments.filter(tid => tid !== tournamentId);
+                    user.tournamentsJoined = Math.max(0, user.tournamentsJoined -1);
+                     addNotification(user.id, `Tournament "${tournament.name}" cancelled. Entry fee ₹${tournament.entryFee} refunded.`, 'refund');
+                }
+            });
+            
+            tournaments.splice(tournamentIndex, 1);
+            updateAllCurrentUserInstances(); // Update wallet for any affected currentUser
+            saveTournaments();
+            loadAdminTournaments();
+            showNotification('Tournament deleted and fees refunded!', 'success');
+        }
+        
+        // --- User Profile & Referral ---
+        function showProfile() {
+            if (!currentUser) return;
+            document.getElementById('profileName').value = currentUser.name;
+            document.getElementById('profileEmail').value = currentUser.email;
+            document.getElementById('profileUsername').value = currentUser.username;
+            document.getElementById('profileFFID').value = currentUser.ffId;
+            document.getElementById('profilePhone').value = currentUser.phone;
+            showModal('userProfileModal');
+        }
+
+        function handleProfileUpdate(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+            currentUser.name = document.getElementById('profileName').value;
+            currentUser.ffId = document.getElementById('profileFFID').value;
+            currentUser.phone = document.getElementById('profilePhone').value;
+            
+            updateCurrentUserInUsersArray();
+            showNotification('Profile updated successfully!', 'success');
+            closeModal('userProfileModal');
+            loadUserDashboardData(); // Refresh dashboard display name
+            updateNavigation(); // Refresh nav display name
+        }
+
+        function showReferralInfo() {
+            if (!currentUser) return;
+            document.getElementById('userReferralCodeDisplay').textContent = currentUser.referralCode;
+            const referralLink = `${window.location.origin}${window.location.pathname}?ref=${currentUser.referralCode}`;
+            document.getElementById('userReferralLinkDisplay').value = referralLink;
+            document.getElementById('referralBonusGiverDisplay').textContent = platformConfig.referralBonusGiver;
+            document.getElementById('referralBonusReceiverDisplay').textContent = platformConfig.referralBonusReceiver;
+            document.getElementById('totalReferralEarningsDisplay').textContent = (currentUser.referralEarnings || 0).toFixed(2);
+            showModal('referralInfoModal');
+        }
+        
+        function copyReferralLink() {
+            const linkInput = document.getElementById('userReferralLinkDisplay');
+            linkInput.select();
+            linkInput.setSelectionRange(0, 99999); // For mobile devices
+            try {
+                document.execCommand('copy');
+                showNotification('Referral link copied to clipboard!', 'success');
+            } catch (err) {
+                showNotification('Failed to copy link. Please copy manually.', 'error');
+            }
+        }
+
+        function generateReferralCode() {
+            // Simple 8-char alphanumeric code
+            return Math.random().toString(36).substring(2, 10).toUpperCase();
+        }
+
+        // --- Notifications ---
+        function addNotification(userId, message, type = 'general') {
+            const user = users.find(u => u.id === userId);
+            if (user) {
+                if (!user.notifications) user.notifications = [];
+                user.notifications.unshift({ // Add to beginning
+                    id: Date.now(),
+                    message,
+                    type, // e.g., 'room_details', 'winner_declared', 'payment_approved', 'referral'
+                    read: false,
+                    timestamp: new Date().toISOString()
+                });
+                // Keep notifications to a reasonable limit, e.g., last 20
+                if (user.notifications.length > 20) {
+                    user.notifications.pop();
+                }
+                if (currentUser && currentUser.id === userId) { // Update current user's object if it's them
+                    currentUser.notifications = user.notifications;
+                    updateCurrentUserInUsersArray(); // Persist this change
+                    updateNavigation(); // Refresh badge
+                } else {
+                    saveUsers(); // Save if it's another user
+                }
+            }
+        }
+
+        function showUserNotifications() {
+            if (!currentUser) return;
+            const listEl = document.getElementById('userNotificationsList');
+            listEl.innerHTML = '';
+            if (currentUser.notifications && currentUser.notifications.length > 0) {
+                currentUser.notifications.forEach(n => {
+                    listEl.innerHTML += `
+                        <div class="p-3 rounded-lg ${n.read ? 'bg-gray-100' : 'bg-blue-50 border border-blue-200'}">
+                            <p class="text-sm ${n.read ? 'text-gray-700' : 'text-blue-800 font-semibold'}">${n.message}</p>
+                            <p class="text-xs ${n.read ? 'text-gray-500' : 'text-blue-600'}">${formatDateTime(n.timestamp)}</p>
+                        </div>
+                    `;
+                });
+            } else {
+                listEl.innerHTML = '<p class="text-gray-500 text-center">No notifications.</p>';
+            }
+            showModal('userNotificationsModal');
+        }
+
+        function markAllNotificationsAsRead() {
+            if (currentUser && currentUser.notifications) {
+                currentUser.notifications.forEach(n => n.read = true);
+                updateCurrentUserInUsersArray();
+                updateNavigation(); // Update badge
+                closeModal('userNotificationsModal'); // Optionally close or refresh list
+                showUserNotifications(); // Refresh list
+                showNotification("All notifications marked as read.", "success");
+            }
+        }
+
+
+        // --- Utility Functions ---
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+            document.getElementById(modalId).classList.add('flex');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            document.getElementById(modalId).classList.remove('flex');
+             // Clear menu if it's related to tournament action
+            document.querySelectorAll('[id^="menu-"]').forEach(m => m.classList.add('hidden'));
+        }
+
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            notificationText.textContent = message;
+            const notificationDiv = notification.querySelector('div');
+            notificationDiv.className = `px-6 py-3 rounded-lg shadow-lg ${type === 'error' ? 'bg-red-500' : type === 'warning' ? 'bg-yellow-500' : 'bg-green-500'} text-white`;
+            notification.style.display = 'block';
+            setTimeout(() => { notification.style.display = 'none'; }, type === 'error' || type === 'warning' ? 4000 : 3000);
+        }
+
+        function refreshTournaments() {
+            loadTournaments();
+            showNotification('Tournaments refreshed!', 'success');
+        }
+
+        function filterTournaments() { loadTournaments(); }
+
+        function getGameTypeLabel(gameType) { /* ... (no change) ... */ return gameType; }
+        function formatDateTime(dateString) { /* ... (no change) ... */ const d=new Date(dateString); return d.toLocaleString(); }
+
+        function getStatusClass(status, forAdmin = false) {
+            const baseClasses = 'px-3 py-1 rounded-full text-xs font-medium';
+            const userClasses = {
+                'pending': 'bg-yellow-400 text-yellow-900',
+                'approved': 'bg-green-400 text-green-900',
+                'rejected': 'bg-red-400 text-red-900',
+                'registering': 'bg-blue-400 text-blue-900',
+                'live': 'bg-red-500 text-white status-live', // User live status
+                'completed': 'bg-gray-400 text-gray-900',
+                'cancelled': 'bg-gray-400 text-gray-900',
+                'failed_insufficient_balance': 'bg-red-400 text-red-900',
+            };
+             const adminClasses = {
+                'pending': 'bg-yellow-100 text-yellow-800',
+                'approved': 'bg-green-100 text-green-800',
+                'rejected': 'bg-red-100 text-red-800',
+                'registering': 'bg-blue-100 text-blue-800',
+                'live': 'bg-pink-100 text-pink-800', // Admin live status
+                'completed': 'bg-gray-200 text-gray-800',
+                'cancelled': 'bg-gray-200 text-gray-800',
+                'failed_insufficient_balance': 'bg-red-100 text-red-800',
+            };
+            return `${baseClasses} ${ (forAdmin ? adminClasses[status] : userClasses[status]) || userClasses['completed'] }`;
+        }
+
+
+        function getUserById(userId) { return users.find(u => u.id === userId); }
+        function calculateTotalRevenue() { return tournaments.reduce((sum, t) => sum + (t.entryFee * t.currentPlayers), 0); }
+        
+        function toggleTournamentMenu(tournamentId, event) {
+            event.stopPropagation(); // Prevent click from closing immediately if menu is part of card
+            const menu = document.getElementById(`menu-${tournamentId}`);
+            const isHidden = menu.classList.contains('hidden');
+             // Hide all other open menus first
+            document.querySelectorAll('[id^="menu-"]').forEach(m => m.classList.add('hidden'));
+            if (isHidden) menu.classList.remove('hidden'); // Then show the clicked one
+        }
+
+        // --- Storage Functions ---
+        function saveUsers() { localStorage.setItem('users', JSON.stringify(users)); }
+        function saveTournaments() { localStorage.setItem('tournaments', JSON.stringify(tournaments)); }
+        function savePaymentRequests() { localStorage.setItem('paymentRequests', JSON.stringify(paymentRequests)); }
+        function saveWithdrawalRequests() { localStorage.setItem('withdrawalRequests', JSON.stringify(withdrawalRequests)); }
+        function savePlatformConfig() { localStorage.setItem('platformConfig', JSON.stringify(platformConfig)); }
+
+        function updateCurrentUserInUsersArray() { // Renamed for clarity
+            if (!currentUser) return;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            const userIndex = users.findIndex(u => u.id === currentUser.id);
+            if (userIndex !== -1) users[userIndex] = { ...currentUser }; // Ensure it's a new object reference for reactivity if needed
+            saveUsers();
+        }
+        // NEW: Update all instances of currentUser if admin is also a user
+        function updateAllCurrentUserInstances() {
+            if(currentUser) {
+                const updatedVersion = users.find(u => u.id === currentUser.id);
+                if(updatedVersion) {
+                    currentUser = {...updatedVersion};
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                }
+            }
+            saveUsers();
+        }
+
+        // Close modals/menus when clicking outside
+        document.addEventListener('click', function(e) {
+            // Modals
+            if (e.target.classList.contains('fixed') && e.target.classList.contains('bg-black')) {
+                closeModal(e.target.id);
+            }
+            // Tournament action menus
+            if (!e.target.closest('[id^="menu-"]') && !e.target.closest('button[onclick*="toggleTournamentMenu"]')) {
+                document.querySelectorAll('[id^="menu-"]').forEach(menu => menu.classList.add('hidden'));
+            }
+             // User sidebar on clicking outside on mobile
+            const sidebar = document.getElementById('userSidebar');
+            if (sidebar && !sidebar.classList.contains('sidebar-hidden') && window.innerWidth < 1024) {
+                if (!sidebar.contains(e.target) && e.target.id !== 'sidebarToggleBtn' && !e.target.closest('#sidebarToggleBtn')) {
+                   toggleUserSidebar();
+                }
+            }
+        });
+
+        // Additional User Management (Admin)
+        function editUserWallet(userId) {
+            const user = users.find(u => u.id === userId);
+            if (!user) return;
+            const newBalanceStr = prompt(`Enter new wallet balance for ${user.name} (current: ₹${user.wallet.toFixed(2)}):`, user.wallet.toFixed(2));
+            if (newBalanceStr !== null) {
+                const newBalance = parseFloat(newBalanceStr);
+                if (!isNaN(newBalance)) {
+                    user.wallet = newBalance;
+                    updateAllCurrentUserInstances(); // If admin is editing their own (non-admin) account or for consistency
+                    showNotification(`Wallet for ${user.name} updated to ₹${user.wallet.toFixed(2)}.`, 'success');
+                    loadAdminUsers();
+                } else {
+                    showNotification('Invalid balance amount.', 'error');
+                }
+            }
+        }
+        function viewUserDetails(userId) {
+            const user = users.find(u => u.id === userId);
+            if (!user) return;
+            alert(`User Details:
+Name: ${user.name}
+Username: ${user.username}
+Email: ${user.email}
+Phone: ${user.phone}
+FF ID: ${user.ffId}
+Wallet: ₹${user.wallet.toFixed(2)}
+Wins: ${user.wins}
+Joined: ${user.tournamentsJoined}
+Referral Code: ${user.referralCode}
+Referred By: ${user.referredByCode || 'N/A'}
+Referral Earnings: ₹${(user.referralEarnings || 0).toFixed(2)}
+Notifications: ${user.notifications?.length || 0}`);
+        }
+        function viewScreenshot(url) { window.open(url, '_blank'); }
+        
+        // Placeholder for static pages
+        function showPagePlaceholder(pageName) {
+            alert(`${pageName} page is under construction.`);
+            if (window.innerWidth < 1024) toggleUserSidebar(); // Close sidebar on mobile
+        }
+
+        function showHistory() { showNotification('History feature coming soon!', 'info'); }
+        
+        // NEW: Load social links to sidebar
+        function loadSocialLinksToSidebar() {
+            const container = document.getElementById('socialLinksContainer');
+            if (!container) return;
+            container.innerHTML = ''; // Clear old links
+            const socialIcons = {
+                facebook: "fab fa-facebook-f",
+                instagram: "fab fa-instagram",
+                youtube: "fab fa-youtube",
+                telegram: "fab fa-telegram-plane",
+                whatsapp: "fab fa-whatsapp",
+                twitter: "fab fa-twitter"
+            };
+            for (const [platform, url] of Object.entries(platformConfig.socialLinks)) {
+                if (url && url !== "#" && url.trim() !== "") {
+                    container.innerHTML += `
+                        <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-xl hover:text-blue-300">
+                            <i class="${socialIcons[platform]}"></i>
+                        </a>`;
+                }
+            }
+        }
+
+    </script>
+</body>
+</html>
